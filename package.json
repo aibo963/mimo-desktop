@@ -7,7 +7,24 @@
     "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && tsc -p tsconfig.electron.json && cross-env NODE_ENV=development electron .\"",
     "build": "vite build && tsc -p tsconfig.electron.json",
     "dist": "npm run build && electron-builder --win",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "npx playwright test",
+    "test:e2e:headed": "npx playwright test --headed",
+    "test:e2e:ui": "npx playwright test --ui",
+    "lint": "eslint src electron --ext .ts,.tsx",
+    "format": "prettier --write src electron",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   },
   "keywords": [
     "mimo",
@@ -18,13 +35,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@tanstack/react-virtual": "^3.14.2",
+    "@agentclientprotocol/sdk": "^0.26.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.8.9",
+    "i18next": "^26.3.1",
     "jsonc-parser": "^3.3.1",
     "lucide-react": "^1.18.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-i18next": "^17.0.8",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.1",
     "recharts": "^3.8.1",
@@ -33,18 +53,33 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
     "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.5.0",
     "concurrently": "^10.0.3",
     "cross-env": "^7.0.3",
     "electron": "^42.4.0",
     "electron-builder": "^26.15.3",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
+    "lint-staged": "^17.0.7",
+    "playwright-core": "^1.61.0",
     "postcss": "^8.5.15",
+    "prettier": "^3.8.4",
+    "sharp": "^0.35.2",
     "tailwindcss": "^3.4.19",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
+    "vitest": "^4.1.9",
     "wait-on": "^9.0.10"
   }
 }
