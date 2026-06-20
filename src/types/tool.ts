@@ -11,11 +11,9 @@ export interface ToolCall {
 
 export interface ToolCallCardProps {
   tool: ToolCall
-  onApprove?: (id: string) => void
-  onDeny?: (id: string) => void
 }
 
-export type ToolType = 
+export type ToolType =
   | 'bash'
   | 'read'
   | 'write'

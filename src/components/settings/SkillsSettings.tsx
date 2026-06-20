@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useMimo } from '@/hooks/useMimo'
-import {
-  BookOpen,
-  RefreshCw,
-  Plus,
-  Trash2,
-  ExternalLink,
-  FolderOpen,
-} from 'lucide-react'
+import { BookOpen, RefreshCw, Plus, Trash2, ExternalLink, FolderOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToastStore } from '@/stores/toastStore'
+import { debug } from '@/lib/debug'
 
 export function SkillsSettings() {
   const [paths, setPaths] = useState<string[]>([])
@@ -17,6 +12,7 @@ export function SkillsSettings() {
   const [newPath, setNewPath] = useState('')
   const [newUrl, setNewUrl] = useState('')
   const { invoke } = useMimo()
+  const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
     loadSkills()
@@ -31,7 +27,8 @@ export function SkillsSettings() {
         setUrls(config.skills.urls || [])
       }
     } catch (error) {
-      console.error('Failed to load skills config:', error)
+      debug.error('Failed to load skills config:', error)
+      addToast('加载技能配置失败', 'error')
     } finally {
       setLoading(false)
     }
@@ -45,7 +42,8 @@ export function SkillsSettings() {
       setPaths(updated)
       setNewPath('')
     } catch (error) {
-      console.error('Failed to add skill path:', error)
+      debug.error('Failed to add skill path:', error)
+      addToast('添加技能路径失败', 'error')
     }
   }
 
@@ -55,7 +53,8 @@ export function SkillsSettings() {
       await invoke({ action: 'set_config', key: 'skills.paths', value: updated })
       setPaths(updated)
     } catch (error) {
-      console.error('Failed to remove skill path:', error)
+      debug.error('Failed to remove skill path:', error)
+      addToast('删除技能路径失败', 'error')
     }
   }
 
@@ -67,7 +66,8 @@ export function SkillsSettings() {
       setUrls(updated)
       setNewUrl('')
     } catch (error) {
-      console.error('Failed to add skill URL:', error)
+      debug.error('Failed to add skill URL:', error)
+      addToast('添加技能 URL 失败', 'error')
     }
   }
 
@@ -77,7 +77,8 @@ export function SkillsSettings() {
       await invoke({ action: 'set_config', key: 'skills.urls', value: updated })
       setUrls(updated)
     } catch (error) {
-      console.error('Failed to remove skill URL:', error)
+      debug.error('Failed to remove skill URL:', error)
+      addToast('删除技能 URL 失败', 'error')
     }
   }
 
@@ -97,9 +98,7 @@ export function SkillsSettings() {
         </button>
       </div>
 
-      <p className="text-xs text-zinc-500">
-        配置额外的技能文件夹路径和远程技能 URL
-      </p>
+      <p className="text-xs text-zinc-500">配置额外的技能文件夹路径和远程技能 URL</p>
 
       <div>
         <label className="text-xs text-zinc-500 block mb-2">

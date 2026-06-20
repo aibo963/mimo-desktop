@@ -13,6 +13,8 @@
     "test:e2e": "npx playwright test",
     "test:e2e:headed": "npx playwright test --headed",
     "test:e2e:ui": "npx playwright test --ui",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
     "lint": "eslint src electron --ext .ts,.tsx",
     "format": "prettier --write src electron",
     "prepare": "husky"
@@ -54,6 +56,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",
+    "@storybook/react": "^10.4.6",
+    "@storybook/react-vite": "^10.4.6",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.17",
@@ -76,6 +80,7 @@
     "postcss": "^8.5.15",
     "prettier": "^3.8.4",
     "sharp": "^0.35.2",
+    "storybook": "^10.4.6",
     "tailwindcss": "^3.4.19",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",

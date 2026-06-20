@@ -1,5 +1,6 @@
 export { ChatPanel } from './ChatPanel'
 export { ChatInput } from './ChatInput'
+export { CommandMenu } from './CommandMenu'
 export { MessageList } from './MessageList'
 export { MessageBubble } from './MessageBubble'
 export { CodeBlock } from './CodeBlock'

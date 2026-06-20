@@ -1,4 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="64" fill="#059669"/>
-  <text x="256" y="320" font-family="Arial, sans-serif" font-size="280" font-weight="bold" fill="white" text-anchor="middle">M</text>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.2)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  
+  <!-- Shine overlay -->
+  <rect width="512" height="256" rx="96" fill="url(#shine)"/>
+  
+  <!-- Chat bubble shape -->
+  <path d="M128 160 C128 130 150 110 180 110 L332 110 C362 110 384 130 384 160 L384 280 C384 310 362 330 332 330 L220 330 L160 380 L168 330 L180 330 C150 330 128 310 128 280 Z" fill="white" fill-opacity="0.95"/>
+  
+  <!-- AI circuit lines inside bubble -->
+  <g stroke="#059669" stroke-width="6" fill="none" stroke-linecap="round">
+    <!-- Left vertical -->
+    <line x1="200" y1="160" x2="200" y2="280"/>
+    <!-- Center vertical -->
+    <line x1="256" y1="140" x2="256" y2="300"/>
+    <!-- Right vertical -->
+    <line x1="312" y1="160" x2="312" y2="280"/>
+    <!-- Horizontal connections -->
+    <line x1="200" y1="200" x2="312" y2="200"/>
+    <line x1="200" y1="240" x2="312" y2="240"/>
+    <!-- Neural network nodes -->
+    <circle cx="200" cy="160" r="12" fill="#059669"/>
+    <circle cx="256" cy="140" r="12" fill="#059669"/>
+    <circle cx="312" cy="160" r="12" fill="#059669"/>
+    <circle cx="200" cy="200" r="12" fill="#059669"/>
+    <circle cx="256" cy="200" r="12" fill="#059669"/>
+    <circle cx="312" cy="200" r="12" fill="#059669"/>
+    <circle cx="200" cy="240" r="12" fill="#059669"/>
+    <circle cx="256" cy="240" r="12" fill="#059669"/>
+    <circle cx="312" cy="240" r="12" fill="#059669"/>
+    <circle cx="200" cy="280" r="12" fill="#059669"/>
+    <circle cx="256" cy="300" r="12" fill="#059669"/>
+    <circle cx="312" cy="280" r="12" fill="#059669"/>
+  </g>
+  
+  <!-- Center AI dot -->
+  <circle cx="256" cy="220" r="18" fill="#059669"/>
+  <circle cx="256" cy="220" r="8" fill="white"/>
 </svg>

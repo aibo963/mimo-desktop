@@ -8,6 +8,10 @@ files:
   - dist-electron/**/*
   - '!node_modules/**/*'
 asar: true
+publish:
+  provider: github
+  owner: mimo-ai
+  repo: mimo-desktop
 win:
   target:
     - target: nsis

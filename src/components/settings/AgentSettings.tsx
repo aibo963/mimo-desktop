@@ -5,12 +5,14 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronRight,
-  Settings,
   Zap,
   BookOpen,
   Search,
+  LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToastStore } from '@/stores/toastStore'
+import { debug } from '@/lib/debug'
 
 interface AgentConfig {
   model?: string
@@ -23,7 +25,7 @@ interface AgentConfig {
 interface Agent {
   name: string
   label: string
-  icon: any
+  icon: LucideIcon
   config: AgentConfig
 }
 
@@ -40,6 +42,7 @@ export function AgentSettings() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<Record<string, AgentConfig>>({})
   const { invoke } = useMimo()
+  const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
     loadAgentConfig()
@@ -50,20 +53,23 @@ export function AgentSettings() {
     try {
       const config = await invoke({ action: 'get_config' })
       if (config?.agent) {
-        setAgents(prev => prev.map(a => ({
-          ...a,
-          config: config.agent[a.name] || {},
-        })))
+        setAgents((prev) =>
+          prev.map((a) => ({
+            ...a,
+            config: config.agent[a.name] || {},
+          }))
+        )
       }
     } catch (error) {
-      console.error('Failed to load agent config:', error)
+      debug.error('Failed to load agent config:', error)
+      addToast('加载 Agent 配置失败', 'error')
     } finally {
       setLoading(false)
     }
   }
 
   const handleEdit = (name: string, field: string, value: any) => {
-    setEditValues(prev => ({
+    setEditValues((prev) => ({
       ...prev,
       [name]: { ...prev[name], [field]: value },
     }))
@@ -77,18 +83,19 @@ export function AgentSettings() {
       await invoke({
         action: 'set_config',
         key: `agent.${name}`,
-        value: { ...agents.find(a => a.name === name)?.config, ...values },
+        value: { ...agents.find((a) => a.name === name)?.config, ...values },
       })
-      setAgents(prev => prev.map(a =>
-        a.name === name ? { ...a, config: { ...a.config, ...values } } : a
-      ))
-      setEditValues(prev => {
+      setAgents((prev) =>
+        prev.map((a) => (a.name === name ? { ...a, config: { ...a.config, ...values } } : a))
+      )
+      setEditValues((prev) => {
         const next = { ...prev }
         delete next[name]
         return next
       })
     } catch (error) {
-      console.error('Failed to save agent config:', error)
+      debug.error('Failed to save agent config:', error)
+      addToast('保存 Agent 配置失败', 'error')
     }
   }
 
@@ -108,16 +115,11 @@ export function AgentSettings() {
         </button>
       </div>
 
-      <p className="text-xs text-zinc-500">
-        配置不同 Agent 的行为和参数
-      </p>
+      <p className="text-xs text-zinc-500">配置不同 Agent 的行为和参数</p>
 
       <div className="space-y-2">
-        {agents.map(agent => (
-          <div
-            key={agent.name}
-            className="border border-zinc-800 rounded-lg overflow-hidden"
-          >
+        {agents.map((agent) => (
+          <div key={agent.name} className="border border-zinc-800 rounded-lg overflow-hidden">
             <div
               className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-800/50 cursor-pointer"
               onClick={() => setExpanded(expanded === agent.name ? null : agent.name)}
@@ -151,7 +153,8 @@ export function AgentSettings() {
 
                 <div>
                   <label className="text-xs text-zinc-500 block mb-1">
-                    温度 ({editValues[agent.name]?.temperature ?? agent.config.temperature ?? '默认'})
+                    温度 (
+                    {editValues[agent.name]?.temperature ?? agent.config.temperature ?? '默认'})
                   </label>
                   <input
                     type="range"
@@ -159,7 +162,9 @@ export function AgentSettings() {
                     max="2"
                     step="0.1"
                     value={editValues[agent.name]?.temperature ?? agent.config.temperature ?? 0.7}
-                    onChange={(e) => handleEdit(agent.name, 'temperature', parseFloat(e.target.value))}
+                    onChange={(e) =>
+                      handleEdit(agent.name, 'temperature', parseFloat(e.target.value))
+                    }
                     className="w-full"
                   />
                 </div>
@@ -173,7 +178,10 @@ export function AgentSettings() {
                     min="1"
                     max="100"
                     value={editValues[agent.name]?.steps ?? agent.config.steps ?? ''}
-                    onChange={(e) => handleEdit(agent.name, 'steps', parseInt(e.target.value) || undefined)}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value)
+                      handleEdit(agent.name, 'steps', isNaN(n) ? undefined : n)
+                    }}
                     placeholder="不限制"
                     className="w-full px-2 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 focus:outline-none focus:border-zinc-600"
                   />
@@ -193,11 +201,13 @@ export function AgentSettings() {
                 {editValues[agent.name] && (
                   <div className="flex justify-end gap-2 pt-1">
                     <button
-                      onClick={() => setEditValues(prev => {
-                        const next = { ...prev }
-                        delete next[agent.name]
-                        return next
-                      })}
+                      onClick={() =>
+                        setEditValues((prev) => {
+                          const next = { ...prev }
+                          delete next[agent.name]
+                          return next
+                        })
+                      }
                       className="px-2 py-1 rounded text-xs text-zinc-400 hover:bg-zinc-800"
                     >
                       取消

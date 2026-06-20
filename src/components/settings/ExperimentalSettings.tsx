@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useMimo } from '@/hooks/useMimo'
-import {
-  Beaker,
-  RefreshCw,
-  Info,
-  ToggleLeft,
-  ToggleRight,
-} from 'lucide-react'
+import { Beaker, RefreshCw, Info, ToggleLeft, ToggleRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToastStore } from '@/stores/toastStore'
+import { debug } from '@/lib/debug'
 
 interface ExperimentalConfig {
   disable_paste_summary?: boolean
@@ -21,6 +17,7 @@ export function ExperimentalSettings() {
   const [config, setConfig] = useState<ExperimentalConfig>({})
   const [loading, setLoading] = useState(false)
   const { invoke } = useMimo()
+  const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
     loadConfig()
@@ -34,27 +31,22 @@ export function ExperimentalSettings() {
         setConfig(fullConfig.experimental)
       }
     } catch (error) {
-      console.error('Failed to load experimental config:', error)
+      debug.error('Failed to load experimental config:', error)
+      addToast('加载实验性配置失败', 'error')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleToggle = async (key: string, value: boolean) => {
-    setConfig(prev => ({ ...prev, [key]: value }))
-    try {
-      await invoke({ action: 'set_config', key: `experimental.${key}`, value })
-    } catch (error) {
-      console.error('Failed to update experimental config:', error)
-    }
-  }
-
   const handleUpdate = async (key: string, value: any) => {
-    setConfig(prev => ({ ...prev, [key]: value }))
+    const prevValue = config[key as keyof ExperimentalConfig]
+    setConfig((prev) => ({ ...prev, [key]: value }))
     try {
       await invoke({ action: 'set_config', key: `experimental.${key}`, value })
     } catch (error) {
-      console.error('Failed to update experimental config:', error)
+      debug.error('Failed to update experimental config:', error)
+      addToast('更新实验性配置失败', 'error')
+      setConfig((prev) => ({ ...prev, [key]: prevValue }))
     }
   }
 
@@ -77,9 +69,7 @@ export function ExperimentalSettings() {
       <div className="p-3 rounded-lg bg-yellow-950/20 border border-yellow-900/50">
         <div className="flex items-start gap-2">
           <Info className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-yellow-400/80">
-            这些功能可能不稳定，使用风险自负。
-          </p>
+          <p className="text-xs text-yellow-400/80">这些功能可能不稳定，使用风险自负。</p>
         </div>
       </div>
 
@@ -90,7 +80,7 @@ export function ExperimentalSettings() {
             <p className="text-xs text-zinc-500">启用批量工具调用</p>
           </div>
           <button
-            onClick={() => handleToggle('batch_tool', !config.batch_tool)}
+            onClick={() => handleUpdate('batch_tool', !config.batch_tool)}
             className={cn(
               'p-0.5 rounded transition-colors',
               config.batch_tool ? 'text-emerald-400' : 'text-zinc-500'
@@ -110,7 +100,7 @@ export function ExperimentalSettings() {
             <p className="text-xs text-zinc-500">工具调用被拒绝后继续执行</p>
           </div>
           <button
-            onClick={() => handleToggle('continue_loop_on_deny', !config.continue_loop_on_deny)}
+            onClick={() => handleUpdate('continue_loop_on_deny', !config.continue_loop_on_deny)}
             className={cn(
               'p-0.5 rounded transition-colors',
               config.continue_loop_on_deny ? 'text-emerald-400' : 'text-zinc-500'
@@ -130,7 +120,7 @@ export function ExperimentalSettings() {
             <p className="text-xs text-zinc-500">粘贴内容时不自动生成摘要</p>
           </div>
           <button
-            onClick={() => handleToggle('disable_paste_summary', !config.disable_paste_summary)}
+            onClick={() => handleUpdate('disable_paste_summary', !config.disable_paste_summary)}
             className={cn(
               'p-0.5 rounded transition-colors',
               config.disable_paste_summary ? 'text-emerald-400' : 'text-zinc-500'
@@ -150,7 +140,7 @@ export function ExperimentalSettings() {
             <p className="text-xs text-zinc-500">启用遥测追踪</p>
           </div>
           <button
-            onClick={() => handleToggle('openTelemetry', !config.openTelemetry)}
+            onClick={() => handleUpdate('openTelemetry', !config.openTelemetry)}
             className={cn(
               'p-0.5 rounded transition-colors',
               config.openTelemetry ? 'text-emerald-400' : 'text-zinc-500'
@@ -165,15 +155,16 @@ export function ExperimentalSettings() {
         </div>
 
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">
-            MCP 超时 (ms)
-          </label>
+          <label className="text-xs text-zinc-500 block mb-1">MCP 超时 (ms)</label>
           <input
             type="number"
             min="1000"
             step="1000"
             value={config.mcp_timeout ?? ''}
-            onChange={(e) => handleUpdate('mcp_timeout', parseInt(e.target.value) || undefined)}
+            onChange={(e) => {
+              const n = parseInt(e.target.value)
+              handleUpdate('mcp_timeout', isNaN(n) ? undefined : n)
+            }}
             placeholder="5000"
             className="w-full px-2 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 focus:outline-none focus:border-zinc-600"
           />

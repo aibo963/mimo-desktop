@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useMimo } from '@/hooks/useMimo'
 import { ChevronDown, Check, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToastStore } from '@/stores/toastStore'
+import { debug } from '@/lib/debug'
 
 export function ModelSelector() {
   const [models, setModels] = useState<string[]>([])
@@ -9,6 +11,7 @@ export function ModelSelector() {
   const [loading, setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const { invoke } = useMimo()
+  const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
     loadModels()
@@ -20,10 +23,11 @@ export function ModelSelector() {
     try {
       const result = await invoke({ action: 'get_models' })
       if (Array.isArray(result)) {
-        setModels(result.map(m => m.trim()))
+        setModels(result.map((m) => m.trim()))
       }
     } catch (error) {
-      console.error('Failed to load models:', error)
+      debug.error('Failed to load models:', error)
+      addToast('加载模型列表失败', 'error')
     } finally {
       setLoading(false)
     }
@@ -36,7 +40,8 @@ export function ModelSelector() {
         setCurrentModel((config.model || config.defaultModel || '').trim())
       }
     } catch (error) {
-      console.error('Failed to load config:', error)
+      debug.error('Failed to load config:', error)
+      addToast('加载模型配置失败', 'error')
     }
   }
 
@@ -46,7 +51,8 @@ export function ModelSelector() {
     try {
       await invoke({ action: 'set_config', key: 'model', value: model })
     } catch (error) {
-      console.error('Failed to save model:', error)
+      debug.error('Failed to save model:', error)
+      addToast('保存模型选择失败', 'error')
     }
   }
 
@@ -72,7 +78,9 @@ export function ModelSelector() {
           <span className={cn('text-sm', currentModel ? 'text-white' : 'text-zinc-400')}>
             {currentModel || '选择模型...'}
           </span>
-          <ChevronDown className={cn('w-4 h-4 text-zinc-400 transition-transform', isOpen && 'rotate-180')} />
+          <ChevronDown
+            className={cn('w-4 h-4 text-zinc-400 transition-transform', isOpen && 'rotate-180')}
+          />
         </button>
 
         {isOpen && (
@@ -82,7 +90,7 @@ export function ModelSelector() {
                 {loading ? '加载中...' : '无可用模型'}
               </div>
             ) : (
-              models.map(model => (
+              models.map((model) => (
                 <button
                   key={model}
                   onClick={() => handleSelect(model)}
@@ -100,9 +108,7 @@ export function ModelSelector() {
         )}
       </div>
 
-      <p className="text-xs text-zinc-500">
-        选择要使用的 AI 模型。更改将在下次对话时生效。
-      </p>
+      <p className="text-xs text-zinc-500">选择要使用的 AI 模型。更改将在下次对话时生效。</p>
     </div>
   )
 }

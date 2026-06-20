@@ -1,5 +1,6 @@
 import fs from 'fs'
 import path from 'path'
+import { debug } from './debug'
 
 export interface FileNode {
   name: string
@@ -52,17 +53,50 @@ const IGNORE_FILES = new Set([
 ])
 
 const BINARY_EXTENSIONS = new Set([
-  'exe', 'dll', 'so', 'dylib', 'bin', 'obj', 'o', 'a', 'lib',
-  'png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'svg', 'webp',
-  'mp3', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm',
-  'zip', 'tar', 'gz', 'rar', '7z', 'bz2',
-  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-  'woff', 'woff2', 'ttf', 'eot',
+  'exe',
+  'dll',
+  'so',
+  'dylib',
+  'bin',
+  'obj',
+  'o',
+  'a',
+  'lib',
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'bmp',
+  'ico',
+  'svg',
+  'webp',
+  'mp3',
+  'mp4',
+  'avi',
+  'mov',
+  'wmv',
+  'flv',
+  'webm',
+  'zip',
+  'tar',
+  'gz',
+  'rar',
+  '7z',
+  'bz2',
+  'pdf',
+  'doc',
+  'docx',
+  'xls',
+  'xlsx',
+  'ppt',
+  'pptx',
+  'woff',
+  'woff2',
+  'ttf',
+  'eot',
 ])
 
-const GENERATED_EXTENSIONS = new Set([
-  'min.js', 'min.css', 'chunk.js', 'chunk.css',
-])
+const GENERATED_EXTENSIONS = new Set(['min.js', 'min.css', 'chunk.js', 'chunk.css'])
 
 export class FileManager {
   private mode: 'all' | 'source' = 'source'
@@ -77,21 +111,21 @@ export class FileManager {
     try {
       const entries = fs.readdirSync(dirPath, { withFileTypes: true })
       return entries
-        .filter(e => this.shouldInclude(e.name, e.isDirectory(), depth))
+        .filter((e) => this.shouldInclude(e.name, e.isDirectory(), depth))
         .sort((a, b) => {
           if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1
           return a.name.localeCompare(b.name)
         })
-        .map(entry => ({
+        .map((entry) => ({
           name: entry.name,
           path: path.join(dirPath, entry.name),
-          type: entry.isDirectory() ? 'directory' as const : 'file' as const,
+          type: entry.isDirectory() ? ('directory' as const) : ('file' as const),
           children: entry.isDirectory()
             ? this.readDirectory(path.join(dirPath, entry.name), depth + 1)
             : undefined,
         }))
     } catch (error: any) {
-      console.error('Failed to read directory:', error.message)
+      debug.error('Failed to read directory:', error.message)
       return []
     }
   }
@@ -104,7 +138,7 @@ export class FileManager {
     if (this.mode === 'source' && !isDir) {
       const ext = path.extname(name).toLowerCase()
       if (BINARY_EXTENSIONS.has(ext.slice(1))) return false
-      
+
       const lowerName = name.toLowerCase()
       for (const gen of GENERATED_EXTENSIONS) {
         if (lowerName.endsWith(gen)) return false
@@ -123,7 +157,7 @@ export class FileManager {
       if (stats.size > 1024 * 1024) return null
       return fs.readFileSync(filePath, 'utf-8')
     } catch (error: any) {
-      console.error('Failed to read file:', error.message)
+      debug.error('Failed to read file:', error.message)
       return null
     }
   }

@@ -1,0 +1,13 @@
+export const TOKEN_CHARS_RATIO = 0.75
+export const COST_PER_MILLION_TOKENS = 2.5
+export const MAX_MESSAGES = 500
+export const MAX_UNDO_HISTORY = 20
+export const STREAMING_TIMEOUT_MS = 30000
+export const AGENT_TIMEOUT_MS = 120000
+export const API_REQUEST_TIMEOUT_MS = 60000
+export const MAX_API_MESSAGES = 50
+export const MAX_FILE_CONTENT_LENGTH = 5000
+export const MAX_TAB_TITLE_LENGTH = 30
+export const QUEUE_POLL_INTERVAL_MS = 1000
+export const MAX_ATTACHMENTS = 10
+export const MAX_IMAGE_ATTACHMENTS = 5

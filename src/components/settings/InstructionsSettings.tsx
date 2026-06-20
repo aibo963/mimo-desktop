@@ -1,19 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useMimo } from '@/hooks/useMimo'
-import {
-  FileText,
-  RefreshCw,
-  Plus,
-  Trash2,
-  Info,
-} from 'lucide-react'
+import { FileText, RefreshCw, Plus, Trash2, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToastStore } from '@/stores/toastStore'
+import { debug } from '@/lib/debug'
 
 export function InstructionsSettings() {
   const [instructions, setInstructions] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [newInstruction, setNewInstruction] = useState('')
   const { invoke } = useMimo()
+  const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
     loadInstructions()
@@ -27,7 +24,8 @@ export function InstructionsSettings() {
         setInstructions(Array.isArray(config.instructions) ? config.instructions : [])
       }
     } catch (error) {
-      console.error('Failed to load instructions:', error)
+      debug.error('Failed to load instructions:', error)
+      addToast('加载指令文件失败', 'error')
     } finally {
       setLoading(false)
     }
@@ -41,7 +39,8 @@ export function InstructionsSettings() {
       setInstructions(updated)
       setNewInstruction('')
     } catch (error) {
-      console.error('Failed to add instruction:', error)
+      debug.error('Failed to add instruction:', error)
+      addToast('添加指令失败', 'error')
     }
   }
 
@@ -51,7 +50,8 @@ export function InstructionsSettings() {
       await invoke({ action: 'set_config', key: 'instructions', value: updated })
       setInstructions(updated)
     } catch (error) {
-      console.error('Failed to remove instruction:', error)
+      debug.error('Failed to remove instruction:', error)
+      addToast('删除指令失败', 'error')
     }
   }
 
@@ -65,7 +65,8 @@ export function InstructionsSettings() {
     try {
       await invoke({ action: 'set_config', key: 'instructions', value: instructions })
     } catch (error) {
-      console.error('Failed to save instructions:', error)
+      debug.error('Failed to save instructions:', error)
+      addToast('保存指令失败', 'error')
     }
   }
 

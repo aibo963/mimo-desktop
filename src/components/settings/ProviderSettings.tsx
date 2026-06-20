@@ -3,7 +3,6 @@ import { useMimo } from '@/hooks/useMimo'
 import {
   Globe,
   RefreshCw,
-  Plus,
   Trash2,
   ChevronDown,
   ChevronRight,
@@ -18,6 +17,8 @@ import {
   Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToastStore } from '@/stores/toastStore'
+import { debug } from '@/lib/debug'
 
 interface Provider {
   id: string
@@ -30,13 +31,59 @@ interface Provider {
 }
 
 const defaultProviders: Provider[] = [
-  { id: 'openai', name: 'OpenAI', api: 'https://api.openai.com/v1', env: ['OPENAI_API_KEY'], enabled: true, hasApiKey: false, models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'] },
-  { id: 'anthropic', name: 'Anthropic', api: 'https://api.anthropic.com', env: ['ANTHROPIC_API_KEY'], enabled: true, hasApiKey: false, models: ['claude-3.5-sonnet', 'claude-3-opus', 'claude-3-haiku'] },
-  { id: 'google', name: 'Google', api: 'https://generativelanguage.googleapis.com', env: ['GOOGLE_API_KEY'], enabled: true, hasApiKey: false, models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.0-pro'] },
-  { id: 'mimo', name: 'MiMo (小米)', api: 'https://api.xiaomimimo.com/v1', enabled: true, hasApiKey: true, models: ['mimo-v2.5-pro', 'mimo-v2-flash', 'mimo-v2-omni'] },
-  { id: 'xiaomi', name: 'Xiaomi', api: 'https://api.xiaomimimo.com/v1', enabled: true, hasApiKey: true, models: ['xiaomi/mimo-v2.5-pro', 'xiaomi/mimo-v2-flash'] },
-  { id: 'deepseek', name: 'DeepSeek', api: 'https://api.deepseek.com/v1', env: ['DEEPSEEK_API_KEY'], enabled: true, hasApiKey: false, models: ['deepseek-chat', 'deepseek-coder'] },
-  { id: 'openrouter', name: 'OpenRouter', api: 'https://openrouter.ai/api/v1', env: ['OPENROUTER_API_KEY'], enabled: true, hasApiKey: false, models: ['openrouter/auto'] },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    api: 'https://api.openai.com/v1',
+    env: ['OPENAI_API_KEY'],
+    enabled: true,
+    hasApiKey: false,
+    models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    api: 'https://api.anthropic.com',
+    env: ['ANTHROPIC_API_KEY'],
+    enabled: true,
+    hasApiKey: false,
+    models: ['claude-3.5-sonnet', 'claude-3-opus', 'claude-3-haiku'],
+  },
+  {
+    id: 'google',
+    name: 'Google',
+    api: 'https://generativelanguage.googleapis.com',
+    env: ['GOOGLE_API_KEY'],
+    enabled: true,
+    hasApiKey: false,
+    models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.0-pro'],
+  },
+  {
+    id: 'xiaomi',
+    name: 'Xiaomi',
+    api: 'https://api.xiaomimimo.com/v1',
+    enabled: true,
+    hasApiKey: true,
+    models: ['xiaomi/mimo-v2.5-pro', 'xiaomi/mimo-v2-flash', 'mimo-v2-omni'],
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    api: 'https://api.deepseek.com/v1',
+    env: ['DEEPSEEK_API_KEY'],
+    enabled: true,
+    hasApiKey: false,
+    models: ['deepseek-chat', 'deepseek-coder'],
+  },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    api: 'https://openrouter.ai/api/v1',
+    env: ['OPENROUTER_API_KEY'],
+    enabled: true,
+    hasApiKey: false,
+    models: ['openrouter/auto'],
+  },
 ]
 
 export function ProviderSettings() {
@@ -47,8 +94,13 @@ export function ProviderSettings() {
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
   const [verifying, setVerifying] = useState(false)
-  const [verifyResult, setVerifyResult] = useState<{ success: boolean; message: string; user?: string } | null>(null)
+  const [verifyResult, setVerifyResult] = useState<{
+    success: boolean
+    message: string
+    user?: string
+  } | null>(null)
   const { invoke } = useMimo()
+  const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
     loadProviders()
@@ -59,32 +111,36 @@ export function ProviderSettings() {
     try {
       const config = await invoke({ action: 'get_config' })
       if (config?.provider) {
-        setProviders(prev => prev.map(p => {
-          const configProvider = config.provider[p.id] || {}
-          const configModels = configProvider.models
-          const models = Array.isArray(configModels)
-            ? configModels
-            : typeof configModels === 'object' && configModels !== null
-              ? Object.keys(configModels)
-              : p.models
+        setProviders((prev) =>
+          prev.map((p) => {
+            const configProvider = config.provider[p.id] || {}
+            const configModels = configProvider.models
+            const models = Array.isArray(configModels)
+              ? configModels
+              : typeof configModels === 'object' && configModels !== null
+                ? Object.keys(configModels)
+                : p.models
 
-          return {
-            ...p,
-            api: configProvider.api || p.api,
-            name: configProvider.name || p.name,
-            models,
-            enabled: !config.disabled_providers?.includes(p.id),
-          }
-        }))
+            return {
+              ...p,
+              api: configProvider.api || p.api,
+              name: configProvider.name || p.name,
+              models,
+              enabled: !config.disabled_providers?.includes(p.id),
+            }
+          })
+        )
       }
       if (config?.disabled_providers) {
-        setProviders(prev => prev.map(p => ({
-          ...p,
-          enabled: !config.disabled_providers.includes(p.id),
-        })))
+        setProviders((prev) =>
+          prev.map((p) => ({
+            ...p,
+            enabled: !config.disabled_providers.includes(p.id),
+          }))
+        )
       }
     } catch (error) {
-      console.error('Failed to load providers:', error)
+      debug.error('Failed to load providers:', error)
     } finally {
       setLoading(false)
     }
@@ -104,51 +160,57 @@ export function ProviderSettings() {
   }
 
   const handleToggle = async (id: string, enabled: boolean) => {
-    setProviders(prev => prev.map(p => p.id === id ? { ...p, enabled } : p))
+    setProviders((prev) => prev.map((p) => (p.id === id ? { ...p, enabled } : p)))
     try {
       const config = await invoke({ action: 'get_config' })
       const disabled = config?.disabled_providers || []
-      const updated = enabled
-        ? disabled.filter((d: string) => d !== id)
-        : [...disabled, id]
+      const updated = enabled ? disabled.filter((d: string) => d !== id) : [...disabled, id]
       await invoke({ action: 'set_config', key: 'disabled_providers', value: updated })
     } catch (error) {
-      console.error('Failed to toggle provider:', error)
+      debug.error('Failed to toggle provider:', error)
+      addToast('切换供应商状态失败', 'error')
     }
   }
 
   const handleSaveApiKey = async (providerId: string) => {
     try {
-      await invoke({ action: 'set_config', key: `provider.${providerId}.options.apiKey`, value: apiKeyInput })
-      setProviders(prev => prev.map(p => 
-        p.id === providerId ? { ...p, hasApiKey: true } : p
-      ))
+      await invoke({
+        action: 'set_config',
+        key: `provider.${providerId}.options.apiKey`,
+        value: apiKeyInput,
+      })
+      setProviders((prev) => prev.map((p) => (p.id === providerId ? { ...p, hasApiKey: true } : p)))
       setEditingKey(null)
       setApiKeyInput('')
     } catch (error) {
-      console.error('Failed to save API key:', error)
+      debug.error('Failed to save API key:', error)
+      addToast('保存 API Key 失败', 'error')
     }
   }
 
   const handleDeleteApiKey = async (providerId: string) => {
     try {
-      await invoke({ action: 'set_config', key: `provider.${providerId}.options.apiKey`, value: undefined })
-      setProviders(prev => prev.map(p => 
-        p.id === providerId ? { ...p, hasApiKey: false } : p
-      ))
+      await invoke({
+        action: 'set_config',
+        key: `provider.${providerId}.options.apiKey`,
+        value: undefined,
+      })
+      setProviders((prev) =>
+        prev.map((p) => (p.id === providerId ? { ...p, hasApiKey: false } : p))
+      )
     } catch (error) {
-      console.error('Failed to delete API key:', error)
+      debug.error('Failed to delete API key:', error)
+      addToast('删除 API Key 失败', 'error')
     }
   }
 
   const handleSaveApiUrl = async (providerId: string, url: string) => {
     try {
       await invoke({ action: 'set_config', key: `provider.${providerId}.api`, value: url })
-      setProviders(prev => prev.map(p => 
-        p.id === providerId ? { ...p, api: url } : p
-      ))
+      setProviders((prev) => prev.map((p) => (p.id === providerId ? { ...p, api: url } : p)))
     } catch (error) {
-      console.error('Failed to save API URL:', error)
+      debug.error('Failed to save API URL:', error)
+      addToast('保存 API 地址失败', 'error')
     }
   }
 
@@ -168,9 +230,7 @@ export function ProviderSettings() {
         </button>
       </div>
 
-      <p className="text-xs text-zinc-500">
-        配置 AI 模型供应商的 API 密钥和接入点
-      </p>
+      <p className="text-xs text-zinc-500">配置 AI 模型供应商的 API 密钥和接入点</p>
 
       <div className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 space-y-2">
         <div className="flex items-center justify-between">
@@ -189,12 +249,14 @@ export function ProviderSettings() {
           </button>
         </div>
         {verifyResult && (
-          <div className={cn(
-            'p-2 rounded text-xs',
-            verifyResult.success
-              ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-800'
-              : 'bg-red-950/30 text-red-400 border border-red-800'
-          )}>
+          <div
+            className={cn(
+              'p-2 rounded text-xs',
+              verifyResult.success
+                ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-800'
+                : 'bg-red-950/30 text-red-400 border border-red-800'
+            )}
+          >
             <p>{verifyResult.message}</p>
             {verifyResult.user && (
               <p className="mt-1 text-[10px] opacity-70">用户 ID: {verifyResult.user}</p>
@@ -204,11 +266,8 @@ export function ProviderSettings() {
       </div>
 
       <div className="space-y-2">
-        {providers.map(provider => (
-          <div
-            key={provider.id}
-            className="border border-zinc-800 rounded-lg overflow-hidden"
-          >
+        {providers.map((provider) => (
+          <div key={provider.id} className="border border-zinc-800 rounded-lg overflow-hidden">
             <div
               className="flex items-center gap-2 px-3 py-2 hover:bg-zinc-800/50 cursor-pointer"
               onClick={() => setExpanded(expanded === provider.id ? null : provider.id)}
@@ -281,7 +340,11 @@ export function ProviderSettings() {
                           onClick={() => setShowApiKey(!showApiKey)}
                           className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500"
                         >
-                          {showApiKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                          {showApiKey ? (
+                            <EyeOff className="w-3 h-3" />
+                          ) : (
+                            <Eye className="w-3 h-3" />
+                          )}
                         </button>
                       </div>
                       <button
@@ -291,7 +354,10 @@ export function ProviderSettings() {
                         <Check className="w-3 h-3" />
                       </button>
                       <button
-                        onClick={() => { setEditingKey(null); setApiKeyInput('') }}
+                        onClick={() => {
+                          setEditingKey(null)
+                          setApiKeyInput('')
+                        }}
                         className="px-2 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 text-xs text-zinc-300"
                       >
                         <X className="w-3 h-3" />
@@ -328,7 +394,7 @@ export function ProviderSettings() {
                 <div>
                   <label className="text-xs text-zinc-500 block mb-1">可用模型</label>
                   <div className="flex flex-wrap gap-1">
-                    {provider.models.map(model => (
+                    {provider.models.map((model) => (
                       <span
                         key={model}
                         className="px-2 py-0.5 rounded bg-zinc-800 text-[10px] text-zinc-400 font-mono"
@@ -345,9 +411,7 @@ export function ProviderSettings() {
       </div>
 
       <div className="pt-2">
-        <p className="text-[10px] text-zinc-600">
-          配置保存在 ~/.config/mimocode/mimocode.jsonc
-        </p>
+        <p className="text-[10px] text-zinc-600">配置保存在 ~/.config/mimocode/mimocode.jsonc</p>
       </div>
     </div>
   )

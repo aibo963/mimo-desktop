@@ -1,11 +1,5 @@
 import { useState, useCallback } from 'react'
-import {
-  ChevronRight,
-  ChevronDown,
-  File,
-  Folder,
-  FolderOpen,
-} from 'lucide-react'
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface FileNode {
@@ -32,17 +26,37 @@ export function FileTreeNode({ node, depth, selectedPath, onSelect }: FileTreeNo
     onSelect?.(node.path, node.type)
   }, [node, expanded, onSelect])
 
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      if (node.type === 'file') {
+        e.dataTransfer.setData(
+          'application/x-mimo-file',
+          JSON.stringify({
+            name: node.name,
+            path: node.path,
+            type: node.type,
+          })
+        )
+        e.dataTransfer.effectAllowed = 'copy'
+      }
+    },
+    [node]
+  )
+
   const isSelected = selectedPath === node.path
 
   return (
     <div>
       <div
         onClick={handleClick}
+        draggable={node.type === 'file'}
+        onDragStart={handleDragStart}
         className={cn(
           'flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors text-sm',
           isSelected
-            ? 'bg-zinc-700 text-white'
-            : 'hover:bg-zinc-800/50 text-zinc-300'
+            ? 'bg-zinc-700 dark:bg-zinc-700 bg-blue-100 text-white dark:text-white text-gray-900'
+            : 'hover:bg-zinc-800/50 dark:hover:bg-zinc-800/50 hover:bg-gray-100 text-zinc-300 dark:text-zinc-300 text-gray-700',
+          node.type === 'file' && 'cursor-grab active:cursor-grabbing'
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
@@ -66,15 +80,16 @@ export function FileTreeNode({ node, depth, selectedPath, onSelect }: FileTreeNo
         )}
         <span className="truncate">{node.name}</span>
       </div>
-      {expanded && node.children?.map(child => (
-        <FileTreeNode
-          key={child.path}
-          node={child}
-          depth={depth + 1}
-          selectedPath={selectedPath}
-          onSelect={onSelect}
-        />
-      ))}
+      {expanded &&
+        node.children?.map((child) => (
+          <FileTreeNode
+            key={child.path}
+            node={child}
+            depth={depth + 1}
+            selectedPath={selectedPath}
+            onSelect={onSelect}
+          />
+        ))}
     </div>
   )
 }

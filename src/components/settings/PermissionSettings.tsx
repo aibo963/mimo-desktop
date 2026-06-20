@@ -7,16 +7,18 @@ import {
   FileText,
   Search,
   Globe,
-  Cpu,
   AlertTriangle,
+  LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToastStore } from '@/stores/toastStore'
+import { debug } from '@/lib/debug'
 
 type PermissionAction = 'ask' | 'allow' | 'deny'
 
 interface ToolPermission {
   name: string
-  icon: any
+  icon: LucideIcon
   label: string
   action: PermissionAction
 }
@@ -43,6 +45,7 @@ export function PermissionSettings() {
   const [loading, setLoading] = useState(false)
   const [globalAction, setGlobalAction] = useState<PermissionAction>('ask')
   const { invoke } = useMimo()
+  const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
     loadPermissions()
@@ -56,14 +59,17 @@ export function PermissionSettings() {
         if (typeof config.permission === 'string') {
           setGlobalAction(config.permission as PermissionAction)
         } else if (typeof config.permission === 'object') {
-          setTools(prev => prev.map(t => ({
-            ...t,
-            action: config.permission[t.name] || t.action,
-          })))
+          setTools((prev) =>
+            prev.map((t) => ({
+              ...t,
+              action: config.permission[t.name] || t.action,
+            }))
+          )
         }
       }
     } catch (error) {
-      console.error('Failed to load permissions:', error)
+      debug.error('Failed to load permissions:', error)
+      addToast('加载权限配置失败', 'error')
     } finally {
       setLoading(false)
     }
@@ -72,9 +78,10 @@ export function PermissionSettings() {
   const handleToggle = async (name: string, action: PermissionAction) => {
     try {
       await invoke({ action: 'set_config', key: `permission.${name}`, value: action })
-      setTools(prev => prev.map(t => t.name === name ? { ...t, action } : t))
+      setTools((prev) => prev.map((t) => (t.name === name ? { ...t, action } : t)))
     } catch (error) {
-      console.error('Failed to update permission:', error)
+      debug.error('Failed to update permission:', error)
+      addToast('更新权限设置失败', 'error')
     }
   }
 
@@ -82,9 +89,10 @@ export function PermissionSettings() {
     try {
       await invoke({ action: 'set_config', key: 'permission', value: action })
       setGlobalAction(action)
-      setTools(prev => prev.map(t => ({ ...t, action })))
+      setTools((prev) => prev.map((t) => ({ ...t, action })))
     } catch (error) {
-      console.error('Failed to update global permission:', error)
+      debug.error('Failed to update global permission:', error)
+      addToast('更新全局权限失败', 'error')
     }
   }
 
@@ -116,7 +124,7 @@ export function PermissionSettings() {
       <div>
         <label className="text-xs text-zinc-500 block mb-2">全局默认权限</label>
         <div className="flex gap-1">
-          {(['ask', 'allow', 'deny'] as PermissionAction[]).map(action => {
+          {(['ask', 'allow', 'deny'] as PermissionAction[]).map((action) => {
             const config = actionColors[action]
             return (
               <button
@@ -138,8 +146,7 @@ export function PermissionSettings() {
 
       <div className="space-y-2">
         <label className="text-xs text-zinc-500">单工具权限</label>
-        {tools.map(tool => {
-          const config = actionColors[tool.action]
+        {tools.map((tool) => {
           return (
             <div
               key={tool.name}
@@ -148,7 +155,7 @@ export function PermissionSettings() {
               <tool.icon className="w-4 h-4 text-zinc-400" />
               <span className="flex-1 text-sm text-zinc-300">{tool.label}</span>
               <div className="flex gap-0.5">
-                {(['ask', 'allow', 'deny'] as PermissionAction[]).map(action => {
+                {(['ask', 'allow', 'deny'] as PermissionAction[]).map((action) => {
                   const ac = actionColors[action]
                   return (
                     <button

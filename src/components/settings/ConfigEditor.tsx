@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMimo } from '@/hooks/useMimo'
 import { Save, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -10,9 +10,13 @@ export function ConfigEditor() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const { invoke } = useMimo()
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {
     loadConfig()
+    return () => {
+      clearTimeout(timerRef.current)
+    }
   }, [])
 
   const loadConfig = async () => {
@@ -40,7 +44,8 @@ export function ConfigEditor() {
       JSON.parse(config)
       await invoke({ action: 'set_config_raw', content: config })
       setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
+      clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setSuccess(false), 3000)
     } catch (err: any) {
       if (err instanceof SyntaxError) {
         setError('JSON 格式错误: ' + err.message)
@@ -99,14 +104,20 @@ export function ConfigEditor() {
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-red-950/30 border border-red-500/30">
+        <div
+          className="flex items-start gap-2 p-3 rounded-lg bg-red-950/30 border border-red-500/30"
+          role="alert"
+        >
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30">
+        <div
+          className="flex items-center gap-2 p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30"
+          role="status"
+        >
           <CheckCircle className="w-4 h-4 text-emerald-400" />
           <p className="text-sm text-emerald-400">配置已保存</p>
         </div>
@@ -123,9 +134,7 @@ export function ConfigEditor() {
         </button>
       </div>
 
-      <p className="text-xs text-zinc-500">
-        配置文件位置: ~/.config/mimocode/mimocode.jsonc
-      </p>
+      <p className="text-xs text-zinc-500">配置文件位置: ~/.config/mimocode/mimocode.jsonc</p>
     </div>
   )
 }

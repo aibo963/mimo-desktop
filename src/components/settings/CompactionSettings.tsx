@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useMimo } from '@/hooks/useMimo'
-import {
-  Layers,
-  RefreshCw,
-  Info,
-  ToggleLeft,
-  ToggleRight,
-} from 'lucide-react'
+import { Layers, RefreshCw, Info, ToggleLeft, ToggleRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useToastStore } from '@/stores/toastStore'
+import { debug } from '@/lib/debug'
 
 interface CompactionConfig {
   auto?: boolean
@@ -25,6 +21,7 @@ export function CompactionSettings() {
   })
   const [loading, setLoading] = useState(false)
   const { invoke } = useMimo()
+  const addToast = useToastStore((state) => state.addToast)
 
   useEffect(() => {
     loadConfig()
@@ -38,7 +35,8 @@ export function CompactionSettings() {
         setConfig(fullConfig.compaction)
       }
     } catch (error) {
-      console.error('Failed to load compaction config:', error)
+      debug.error('Failed to load compaction config:', error)
+      addToast('加载压缩配置失败', 'error')
     } finally {
       setLoading(false)
     }
@@ -50,7 +48,8 @@ export function CompactionSettings() {
     try {
       await invoke({ action: 'set_config', key: `compaction.${key}`, value })
     } catch (error) {
-      console.error('Failed to update compaction config:', error)
+      debug.error('Failed to update compaction config:', error)
+      addToast('更新压缩配置失败', 'error')
     }
   }
 
@@ -92,11 +91,7 @@ export function CompactionSettings() {
               config.auto ? 'text-emerald-400' : 'text-zinc-500'
             )}
           >
-            {config.auto ? (
-              <ToggleRight className="w-8 h-5" />
-            ) : (
-              <ToggleLeft className="w-8 h-5" />
-            )}
+            {config.auto ? <ToggleRight className="w-8 h-5" /> : <ToggleLeft className="w-8 h-5" />}
           </button>
         </div>
 
@@ -133,42 +128,40 @@ export function CompactionSettings() {
             onChange={(e) => handleUpdate('tail_turns', parseInt(e.target.value))}
             className="w-full"
           />
-          <p className="text-[10px] text-zinc-600 mt-1">
-            压缩时保留最近 N 轮对话的完整内容
-          </p>
+          <p className="text-[10px] text-zinc-600 mt-1">压缩时保留最近 N 轮对话的完整内容</p>
         </div>
 
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">
-            保留最近 Token 数
-          </label>
+          <label className="text-xs text-zinc-500 block mb-1">保留最近 Token 数</label>
           <input
             type="number"
             min="0"
             step="1000"
             value={config.preserve_recent_tokens ?? ''}
-            onChange={(e) => handleUpdate('preserve_recent_tokens', parseInt(e.target.value) || undefined)}
+            onChange={(e) => {
+              const n = parseInt(e.target.value)
+              handleUpdate('preserve_recent_tokens', isNaN(n) ? undefined : n)
+            }}
             placeholder="不限制"
             className="w-full px-2 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 focus:outline-none focus:border-zinc-600"
           />
         </div>
 
         <div>
-          <label className="text-xs text-zinc-500 block mb-1">
-            预留 Token 缓冲
-          </label>
+          <label className="text-xs text-zinc-500 block mb-1">预留 Token 缓冲</label>
           <input
             type="number"
             min="0"
             step="1000"
             value={config.reserved ?? ''}
-            onChange={(e) => handleUpdate('reserved', parseInt(e.target.value) || undefined)}
+            onChange={(e) => {
+              const n = parseInt(e.target.value)
+              handleUpdate('reserved', isNaN(n) ? undefined : n)
+            }}
             placeholder="默认值"
             className="w-full px-2 py-1.5 rounded bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 focus:outline-none focus:border-zinc-600"
           />
-          <p className="text-[10px] text-zinc-600 mt-1">
-            为压缩过程预留的 token 缓冲区
-          </p>
+          <p className="text-[10px] text-zinc-600 mt-1">为压缩过程预留的 token 缓冲区</p>
         </div>
       </div>
     </div>

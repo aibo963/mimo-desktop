@@ -1,21 +1,31 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback } from 'react'
 import { MimoEvent, MimoCommand } from '../../electron/types/ipc'
+import { debug } from '@/lib/debug'
+
+let globalListenerRegistered = false
+const globalListeners = new Set<(e: MimoEvent) => void>()
 
 export function useMimo() {
-  const listeners = useRef<Set<(e: MimoEvent) => void>>(new Set())
-
   useEffect(() => {
-    window.mimoAPI.onEvent((event) => {
-      listeners.current.forEach(cb => cb(event))
-    })
-    return () => window.mimoAPI.offEvent()
+    if (!globalListenerRegistered) {
+      window.mimoAPI.onEvent((event: MimoEvent) => {
+        debug.log(`[useMimo] event received type=${event.type} listeners=${globalListeners.size}`)
+        globalListeners.forEach((cb) => cb(event))
+      })
+      globalListenerRegistered = true
+    }
+
+    return () => {}
   }, [])
 
   const invoke = useCallback((cmd: MimoCommand) => window.mimoAPI.invoke(cmd), [])
 
   const subscribe = useCallback((cb: (e: MimoEvent) => void) => {
-    listeners.current.add(cb)
-    return () => { listeners.current.delete(cb) }
+    globalListeners.add(cb)
+    debug.log(`[useMimo] subscribe, total listeners: ${globalListeners.size}`)
+    return () => {
+      globalListeners.delete(cb)
+    }
   }, [])
 
   return { invoke, subscribe }

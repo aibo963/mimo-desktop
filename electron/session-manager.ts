@@ -1,26 +1,18 @@
-import { exec } from 'child_process'
-import { promisify } from 'util'
-import path from 'path'
-import fs from 'fs'
-
-const execAsync = promisify(exec)
-
-function getMimoPath(): string {
-  const npmGlobalPath = process.env.APPDATA
-    ? path.join(process.env.APPDATA, 'npm', 'mimo.cmd')
-    : 'mimo'
-  
-  if (fs.existsSync(npmGlobalPath)) {
-    return npmGlobalPath
-  }
-  return 'mimo'
-}
+import { getMimoPath, execMimo } from './utils/mimo-path'
+import { debug } from './debug'
 
 function escapeArg(arg: string): string {
   if (arg.includes(' ') || arg.includes('"') || arg.includes("'")) {
     return `"${arg.replace(/"/g, '\\"')}"`
   }
   return arg
+}
+
+function sanitizeSessionId(sessionId: string): string {
+  if (!/^[a-f0-9-]{1,64}$/i.test(sessionId)) {
+    throw new Error('Invalid session ID format')
+  }
+  return sessionId
 }
 
 export interface Session {
@@ -40,38 +32,36 @@ export class SessionManager {
 
   async list(): Promise<Session[]> {
     try {
-      const { stdout } = await execAsync(`${this.mimoPath} session list --format json`, {
-        timeout: 10000,
-      })
-      const parsed = JSON.parse(stdout)
+      const stdout = await execMimo('session list --format json')
+      const trimmed = stdout.trim()
+      if (!trimmed) return []
+      const parsed = JSON.parse(trimmed)
       return Array.isArray(parsed) ? parsed : []
     } catch (error: any) {
-      console.error('Failed to list sessions:', error.message)
+      debug.error('[SessionManager] list failed:', error.message)
       return []
     }
   }
 
   async delete(sessionId: string): Promise<void> {
     try {
-      await execAsync(`${this.mimoPath} session delete ${escapeArg(sessionId)}`, {
-        timeout: 10000,
-      })
+      const safeId = sanitizeSessionId(sessionId)
+      await execMimo(`session delete ${escapeArg(safeId)}`)
     } catch (error: any) {
-      console.error('Failed to delete session:', error.message)
+      debug.error('[SessionManager] delete failed:', error.message)
       throw error
     }
   }
 
   async getHistory(sessionId: string): Promise<any[]> {
     try {
-      const query = `SELECT role, content, created_at FROM part WHERE session_id = '${sessionId}' AND type = 'text' ORDER BY created_at`
-      const { stdout } = await execAsync(`${this.mimoPath} db ${escapeArg(query)} --format json`, {
-        timeout: 10000,
-      })
+      const safeId = sanitizeSessionId(sessionId)
+      const query = `SELECT role, content, created_at FROM part WHERE session_id = '${safeId}' AND type = 'text' ORDER BY created_at`
+      const stdout = await execMimo(`db ${escapeArg(query)} --format json`)
       const parsed = JSON.parse(stdout)
       return Array.isArray(parsed) ? parsed : []
     } catch (error: any) {
-      console.error('Failed to get session history:', error.message)
+      debug.error('[SessionManager] getHistory failed:', error.message)
       return []
     }
   }
